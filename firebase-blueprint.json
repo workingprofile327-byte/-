@@ -1,0 +1,412 @@
+{
+  "entities": {
+    "AccountRecord": {
+      "title": "AccountRecord",
+      "description": "Mobile number and PIN account record for Amar Hishab.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 30
+        },
+        "pin": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 20
+        },
+        "quickLockPin": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 20
+        },
+        "pinBioExitLockEnabled": {
+          "type": "boolean"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "role": {
+          "type": "string",
+          "enum": ["shopkeeper", "customer"]
+        },
+        "shopName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100
+        },
+        "shopAddress": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120
+        },
+        "address": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120
+        },
+        "shopCode": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 32
+        },
+        "photoDataUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 150000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "phone",
+        "pin",
+        "displayName",
+        "role",
+        "shopName",
+        "shopCode",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and role settings for Amar Hishab.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 30
+        },
+        "activeRole": {
+          "type": "string",
+          "enum": ["shopkeeper", "customer"]
+        },
+        "shopName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100
+        },
+        "shopCode": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "phone",
+        "activeRole",
+        "shopName",
+        "shopCode",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Shop": {
+      "title": "Shop",
+      "description": "Publicly linkable shop directory record and product catalog.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "shopName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "shopCode": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "productsJson": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 30000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "ownerName",
+        "shopName",
+        "shopCode",
+        "category",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShopCustomerLink": {
+      "title": "ShopCustomerLink",
+      "description": "Ledger relationship between a shopkeeper and a customer established via QR code or direct registration.",
+      "type": "object",
+      "properties": {
+        "shopkeeperId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "shopName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "customerPhone": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 30
+        },
+        "totalBaki": {
+          "type": "number"
+        },
+        "totalAgrim": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "shopkeeperId",
+        "customerId",
+        "shopName",
+        "customerName",
+        "customerPhone",
+        "totalBaki",
+        "totalAgrim",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LedgerTransaction": {
+      "title": "LedgerTransaction",
+      "description": "A credit purchase, payment, or cash sale receipt with dual-party verification and correction approval workflow.",
+      "type": "object",
+      "properties": {
+        "linkId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "shopkeeperId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorRole": {
+          "type": "string",
+          "enum": ["shopkeeper", "customer"]
+        },
+        "shopName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "type": {
+          "type": "string",
+          "enum": ["baki", "joma", "nagad"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        },
+        "proposedAmount": {
+          "type": "number"
+        },
+        "proposedDescription": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 3000
+        },
+        "editReason": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending_shopkeeper",
+            "pending_customer_approval",
+            "approved",
+            "rejected"
+          ]
+        },
+        "syncMethod": {
+          "type": "string",
+          "enum": ["online", "wifi_bt_qr"]
+        },
+        "txDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "linkId",
+        "shopkeeperId",
+        "customerId",
+        "createdBy",
+        "creatorRole",
+        "shopName",
+        "customerName",
+        "type",
+        "amount",
+        "description",
+        "proposedAmount",
+        "proposedDescription",
+        "editReason",
+        "status",
+        "syncMethod",
+        "txDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/accounts/{phoneId}": {
+      "schema": {
+        "$ref": "#/entities/AccountRecord"
+      },
+      "description": "Mobile number and PIN account records keyed by phone."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "User profiles keyed by UID."
+    },
+    "/shops/{shopId}": {
+      "schema": {
+        "$ref": "#/entities/Shop"
+      },
+      "description": "Shop directory and product catalogs keyed by shopCode and shopkeeper UID."
+    },
+    "/links/{linkId}": {
+      "schema": {
+        "$ref": "#/entities/ShopCustomerLink"
+      },
+      "description": "Active ledger links between shopkeepers and customers."
+    },
+    "/transactions/{txId}": {
+      "schema": {
+        "$ref": "#/entities/LedgerTransaction"
+      },
+      "description": "Ledger receipts with verification and counter-approval states."
+    }
+  }
+}

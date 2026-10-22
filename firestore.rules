@@ -1,0 +1,370 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation Blueprint: AccountRecord (/accounts/{phoneId})
+    function isValidAccountRecord(data) {
+      return data.keys().hasAll([
+          'uid',
+          'phone',
+          'pin',
+          'displayName',
+          'role',
+          'shopName',
+          'shopCode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'phone',
+          'pin',
+          'quickLockPin',
+          'pinBioExitLockEnabled',
+          'displayName',
+          'role',
+          'shopName',
+          'shopAddress',
+          'address',
+          'shopCode',
+          'photoDataUrl',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.phone is string && data.phone.size() >= 3 && data.phone.size() <= 30
+        && data.pin is string && data.pin.size() >= 4 && data.pin.size() <= 20
+        && (!('quickLockPin' in data) || (data.quickLockPin is string && data.quickLockPin.size() <= 20))
+        && (!('pinBioExitLockEnabled' in data) || (data.pinBioExitLockEnabled is bool))
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.role is string && (data.role == 'shopkeeper' || data.role == 'customer')
+        && data.shopName is string && data.shopName.size() <= 100
+        && (!('shopAddress' in data) || (data.shopAddress is string && data.shopAddress.size() <= 120))
+        && (!('address' in data) || (data.address is string && data.address.size() <= 120))
+        && data.shopCode is string && data.shopCode.size() <= 32
+        && (!('photoDataUrl' in data) || (data.photoDataUrl is string && data.photoDataUrl.size() <= 150000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: UserProfile (/users/{userId})
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'displayName',
+          'phone',
+          'activeRole',
+          'shopName',
+          'shopCode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'phone',
+          'activeRole',
+          'shopName',
+          'shopCode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.phone is string && data.phone.size() <= 30
+        && data.activeRole is string && (data.activeRole == 'shopkeeper' || data.activeRole == 'customer')
+        && data.shopName is string && data.shopName.size() <= 100
+        && data.shopCode is string && data.shopCode.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Shop (/shops/{shopId})
+    function isValidShop(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'ownerName',
+          'shopName',
+          'shopCode',
+          'category',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'ownerName',
+          'shopName',
+          'shopCode',
+          'category',
+          'productsJson',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.ownerId)
+        && data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 80
+        && data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 100
+        && data.shopCode is string && data.shopCode.size() >= 3 && data.shopCode.size() <= 32 && data.shopCode.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 120
+        && (!('productsJson' in data) || (data.productsJson is string && data.productsJson.size() <= 30000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: ShopCustomerLink (/links/{linkId})
+    function isValidShopCustomerLink(data) {
+      return data.keys().hasAll([
+          'shopkeeperId',
+          'customerId',
+          'shopName',
+          'customerName',
+          'customerPhone',
+          'totalBaki',
+          'totalAgrim',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'shopkeeperId',
+          'customerId',
+          'shopName',
+          'customerName',
+          'customerPhone',
+          'totalBaki',
+          'totalAgrim',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.shopkeeperId)
+        && isValidId(data.customerId)
+        && data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 100
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 80
+        && data.customerPhone is string && data.customerPhone.size() <= 30
+        && data.totalBaki is number && data.totalBaki >= 0 && data.totalBaki <= 100000000
+        && data.totalAgrim is number && data.totalAgrim >= 0 && data.totalAgrim <= 100000000
+        && data.status is string && (data.status == 'active' || data.status == 'archived')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: LedgerTransaction (/transactions/{txId})
+    function isValidLedgerTransaction(data) {
+      return data.keys().hasAll([
+          'linkId',
+          'shopkeeperId',
+          'customerId',
+          'createdBy',
+          'creatorRole',
+          'shopName',
+          'customerName',
+          'type',
+          'amount',
+          'description',
+          'proposedAmount',
+          'proposedDescription',
+          'editReason',
+          'status',
+          'syncMethod',
+          'txDate',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'linkId',
+          'shopkeeperId',
+          'customerId',
+          'createdBy',
+          'creatorRole',
+          'shopName',
+          'customerName',
+          'type',
+          'amount',
+          'description',
+          'proposedAmount',
+          'proposedDescription',
+          'editReason',
+          'status',
+          'syncMethod',
+          'txDate',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.linkId)
+        && isValidId(data.shopkeeperId)
+        && isValidId(data.customerId)
+        && isValidId(data.createdBy)
+        && data.creatorRole is string && (data.creatorRole == 'shopkeeper' || data.creatorRole == 'customer')
+        && data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 100
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 80
+        && data.type is string && (data.type == 'baki' || data.type == 'joma' || data.type == 'nagad')
+        && data.amount is number && data.amount > 0 && data.amount <= 10000000
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 3000
+        && data.proposedAmount is number && data.proposedAmount >= 0 && data.proposedAmount <= 10000000
+        && data.proposedDescription is string && data.proposedDescription.size() <= 3000
+        && data.editReason is string && data.editReason.size() <= 200
+        && data.status is string && (
+          data.status == 'pending_shopkeeper'
+          || data.status == 'pending_customer_approval'
+          || data.status == 'approved'
+          || data.status == 'rejected'
+        )
+        && data.syncMethod is string && (data.syncMethod == 'online' || data.syncMethod == 'wifi_bt_qr')
+        && data.txDate is string && data.txDate.size() == 10 && data.txDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 0. Mobile + PIN Accounts (/accounts/{phoneId})
+    match /accounts/{phoneId} {
+      allow get: if isValidId(phoneId);
+      allow list: if false;
+      allow create: if isValidId(phoneId)
+        && isValidAccountRecord(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(phoneId)
+        && isValidAccountRecord(incoming())
+        && incoming().uid == existing().uid
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'phone',
+          'pin',
+          'quickLockPin',
+          'pinBioExitLockEnabled',
+          'displayName',
+          'role',
+          'shopName',
+          'shopAddress',
+          'address',
+          'shopCode',
+          'photoDataUrl',
+          'createdAt',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 1. User Profiles (/users/{userId})
+    match /users/{userId} {
+      allow get: if isValidId(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'phone',
+          'activeRole',
+          'shopName',
+          'shopCode',
+          'createdAt',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 2. Public Shop Directory & Product Catalog (/shops/{shopId})
+    match /shops/{shopId} {
+      allow get: if isValidId(shopId);
+      allow list: if isValidId(existing().ownerId) && existing().shopCode is string && existing().shopCode.size() >= 3;
+      allow create: if isValidId(shopId)
+        && isValidShop(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(shopId)
+        && isValidShop(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'ownerName',
+          'shopName',
+          'shopCode',
+          'category',
+          'productsJson',
+          'createdAt',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 3. Shopkeeper-Customer Links (/links/{linkId})
+    match /links/{linkId} {
+      allow get: if isValidId(linkId);
+      allow list: if isValidId(existing().shopkeeperId) && isValidId(existing().customerId);
+      allow create: if isValidId(linkId)
+        && isValidShopCustomerLink(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(linkId)
+        && isValidShopCustomerLink(incoming())
+        && incoming().shopkeeperId == existing().shopkeeperId
+        && incoming().customerId == existing().customerId
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'totalBaki',
+          'totalAgrim',
+          'customerName',
+          'customerPhone',
+          'shopName',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 4. Ledger Transactions (/transactions/{txId})
+    match /transactions/{txId} {
+      allow get: if isValidId(txId);
+      allow list: if isValidId(existing().shopkeeperId) && isValidId(existing().customerId);
+      allow create: if isValidId(txId)
+        && isValidLedgerTransaction(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(txId)
+        && isValidLedgerTransaction(incoming())
+        && incoming().linkId == existing().linkId
+        && incoming().shopkeeperId == existing().shopkeeperId
+        && incoming().customerId == existing().customerId
+        && incoming().createdBy == existing().createdBy
+        && incoming().creatorRole == existing().creatorRole
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'amount',
+          'description',
+          'proposedAmount',
+          'proposedDescription',
+          'editReason',
+          'status',
+          'syncMethod',
+          'createdAt',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "আমার হিসাব (Amar Hishab)",
+  "description": "দোকানদার ও কাস্টমারের ডিজিটাল বাকী-অগ্রিম খাতা, QR লিংক, অফলাইন ওয়াইফাই/ব্লুটুথ ডাটা শেয়ার এবং দ্বিপাক্ষিক হিসাব যাচাই অ্যাপ (com.wic.amarhishab)।",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

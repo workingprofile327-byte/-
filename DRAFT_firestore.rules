@@ -1,0 +1,369 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation Blueprint: UserProfile (/users/{userId})
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'displayName',
+          'phone',
+          'activeRole',
+          'shopName',
+          'shopCode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'phone',
+          'activeRole',
+          'shopName',
+          'shopCode',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.phone is string && data.phone.size() <= 20
+        && data.activeRole is string && (data.activeRole == 'shopkeeper' || data.activeRole == 'customer')
+        && data.shopName is string && data.shopName.size() <= 100
+        && data.shopCode is string && data.shopCode.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Shop (/shops/{shopId})
+    function isValidShop(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'ownerName',
+          'shopName',
+          'shopCode',
+          'category',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId',
+          'ownerName',
+          'shopName',
+          'shopCode',
+          'category',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 80
+        && data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 100
+        && data.shopCode is string && data.shopCode.size() >= 3 && data.shopCode.size() <= 32 && data.shopCode.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 60
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: ShopCustomerLink (/links/{linkId})
+    function isValidShopCustomerLink(data) {
+      return data.keys().hasAll([
+          'shopkeeperId',
+          'customerId',
+          'shopName',
+          'customerName',
+          'customerPhone',
+          'totalBaki',
+          'totalAgrim',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'shopkeeperId',
+          'customerId',
+          'shopName',
+          'customerName',
+          'customerPhone',
+          'totalBaki',
+          'totalAgrim',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && (data.shopkeeperId == request.auth.uid || data.customerId == request.auth.uid)
+        && isValidId(data.shopkeeperId)
+        && isValidId(data.customerId)
+        && data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 100
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 80
+        && data.customerPhone is string && data.customerPhone.size() <= 20
+        && data.totalBaki is number && data.totalBaki >= 0 && data.totalBaki <= 100000000
+        && data.totalAgrim is number && data.totalAgrim >= 0 && data.totalAgrim <= 100000000
+        && data.status is string && (data.status == 'active' || data.status == 'archived')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: LedgerTransaction (/transactions/{txId})
+    function isValidLedgerTransaction(data) {
+      return data.keys().hasAll([
+          'linkId',
+          'shopkeeperId',
+          'customerId',
+          'createdBy',
+          'creatorRole',
+          'shopName',
+          'customerName',
+          'type',
+          'amount',
+          'description',
+          'proposedAmount',
+          'proposedDescription',
+          'editReason',
+          'status',
+          'syncMethod',
+          'txDate',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'linkId',
+          'shopkeeperId',
+          'customerId',
+          'createdBy',
+          'creatorRole',
+          'shopName',
+          'customerName',
+          'type',
+          'amount',
+          'description',
+          'proposedAmount',
+          'proposedDescription',
+          'editReason',
+          'status',
+          'syncMethod',
+          'txDate',
+          'createdAt',
+          'updatedAt'
+        ])
+        && (data.shopkeeperId == request.auth.uid || data.customerId == request.auth.uid)
+        && isValidId(data.linkId)
+        && isValidId(data.shopkeeperId)
+        && isValidId(data.customerId)
+        && isValidId(data.createdBy)
+        && data.creatorRole is string && (data.creatorRole == 'shopkeeper' || data.creatorRole == 'customer')
+        && data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 100
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 80
+        && data.type is string && (data.type == 'baki' || data.type == 'joma' || data.type == 'nagad')
+        && data.amount is number && data.amount > 0 && data.amount <= 10000000
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 300
+        && data.proposedAmount is number && data.proposedAmount >= 0 && data.proposedAmount <= 10000000
+        && data.proposedDescription is string && data.proposedDescription.size() <= 300
+        && data.editReason is string && data.editReason.size() <= 200
+        && data.status is string && (
+          data.status == 'pending_shopkeeper'
+          || data.status == 'pending_customer_approval'
+          || data.status == 'approved'
+          || data.status == 'rejected'
+        )
+        && data.syncMethod is string && (data.syncMethod == 'online' || data.syncMethod == 'wifi_bt_qr')
+        && data.txDate is string && data.txDate.size() == 10 && data.txDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 1. Private User Profiles (PII Isolated to strict Owner)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'phone',
+          'activeRole',
+          'shopName',
+          'shopCode',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 2. Public Shop Directory (Non-PII, used for QR & Code Linking)
+    match /shops/{shopId} {
+      allow get: if isSignedIn() && isValidId(shopId);
+      allow list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(shopId)
+        && shopId == request.auth.uid
+        && isValidShop(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(shopId)
+        && shopId == request.auth.uid
+        && isValidShop(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'ownerName',
+          'shopName',
+          'shopCode',
+          'category',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // 3. Shopkeeper-Customer Links
+    match /links/{linkId} {
+      allow get: if isSignedIn()
+        && isValidId(linkId)
+        && (existing().shopkeeperId == request.auth.uid || existing().customerId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (existing().shopkeeperId == request.auth.uid || existing().customerId == request.auth.uid);
+      allow create: if isVerifiedUser()
+        && isValidId(linkId)
+        && isValidShopCustomerLink(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/shops/$(incoming().shopkeeperId));
+      allow update: if isVerifiedUser()
+        && isValidId(linkId)
+        && isValidShopCustomerLink(incoming())
+        && (existing().shopkeeperId == request.auth.uid || existing().customerId == request.auth.uid)
+        && incoming().shopkeeperId == existing().shopkeeperId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Balance or metadata update by participant
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'totalBaki',
+            'totalAgrim',
+            'customerName',
+            'customerPhone',
+            'shopName',
+            'status',
+            'updatedAt'
+          ])
+        );
+      allow delete: if false;
+    }
+
+    // 4. Ledger Transactions (With Verification & Counter-Approval State Machine)
+    match /transactions/{txId} {
+      allow get: if isSignedIn()
+        && isValidId(txId)
+        && (existing().shopkeeperId == request.auth.uid || existing().customerId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (existing().shopkeeperId == request.auth.uid || existing().customerId == request.auth.uid);
+      allow create: if isVerifiedUser()
+        && isValidId(txId)
+        && isValidLedgerTransaction(incoming())
+        && incoming().createdBy == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/links/$(incoming().linkId));
+      allow update: if isVerifiedUser()
+        && isValidId(txId)
+        && isValidLedgerTransaction(incoming())
+        && (existing().status == 'pending_shopkeeper' || existing().status == 'pending_customer_approval')
+        && incoming().linkId == existing().linkId
+        && incoming().shopkeeperId == existing().shopkeeperId
+        && incoming().customerId == existing().customerId
+        && incoming().createdBy == existing().createdBy
+        && incoming().creatorRole == existing().creatorRole
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Shopkeeper approves customer entry directly
+          (
+            existing().status == 'pending_shopkeeper'
+            && existing().shopkeeperId == request.auth.uid
+            && incoming().status == 'approved'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+          ||
+          // Action 2: Shopkeeper modifies/corrects customer entry -> requires customer approval
+          (
+            existing().status == 'pending_shopkeeper'
+            && existing().shopkeeperId == request.auth.uid
+            && incoming().status == 'pending_customer_approval'
+            && incoming().proposedAmount > 0
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'proposedAmount',
+              'proposedDescription',
+              'editReason',
+              'status',
+              'updatedAt'
+            ])
+          )
+          ||
+          // Action 3: Customer approves shopkeeper's proposed correction
+          (
+            existing().status == 'pending_customer_approval'
+            && existing().customerId == request.auth.uid
+            && incoming().status == 'approved'
+            && incoming().amount == existing().proposedAmount
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'amount',
+              'description',
+              'status',
+              'updatedAt'
+            ])
+          )
+          ||
+          // Action 4: Either participant rejects a pending entry or correction
+          (
+            (existing().shopkeeperId == request.auth.uid || existing().customerId == request.auth.uid)
+            && incoming().status == 'rejected'
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'status',
+              'editReason',
+              'updatedAt'
+            ])
+          )
+        );
+      allow delete: if false;
+    }
+  }
+}
